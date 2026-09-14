@@ -39,11 +39,27 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                bat """
-                    docker run -d -p 5000:5000 -e APP_ENVIRONMENT=%APP_ENVIRONMENT% --name shd-%BUILD_NUMBER% %IMAGE_NAME%:%BUILD_NUMBER%
-                    timeout /t 5 /nobreak
-                    curl -f http://localhost:5000/health
-                """
+                bat "docker run -d -p 5000:5000 -e APP_ENVIRONMENT=%APP_ENVIRONMENT% --name shd-%BUILD_NUMBER% %IMAGE_NAME%:%BUILD_NUMBER%"
+                powershell '''
+                    $ok = $false
+                    for ($i = 1; $i -le 10; $i++) {
+                        Start-Sleep -Seconds 3
+                        try {
+                            $r = Invoke-WebRequest -Uri http://localhost:5000/health -UseBasicParsing
+                            if ($r.StatusCode -eq 200) {
+                                Write-Host "Health check passed:" $r.Content
+                                $ok = $true
+                                break
+                            }
+                        } catch {
+                            Write-Host "Attempt $i - not ready yet, retrying..."
+                        }
+                    }
+                    if (-not $ok) {
+                        Write-Error "Health check failed after 10 attempts"
+                        exit 1
+                    }
+                '''
             }
         }
     }

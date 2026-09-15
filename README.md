@@ -104,11 +104,12 @@ trigger a build.
 
 ## Project structure
 
+```
 system-health-dashboard/
 ├── app.py
 ├── requirements.txt
 ├── tests/
-│ └── test_app.py
+│   └── test_app.py
 ├── conftest.py
 ├── Dockerfile
 ├── .dockerignore
@@ -116,6 +117,7 @@ system-health-dashboard/
 ├── Jenkinsfile
 ├── MERGE_CONFLICT.md
 └── README.md
+```
 
 ## Evidence
 
@@ -139,46 +141,50 @@ containerises every change.
 
 ### Delivery workflow
 
+```
 feature/* branches
-│ (merge)
-▼
-develop ───────► Pull Request ───────► main
-│
-│ (Jenkins polls / build triggered)
-▼
-┌─────────────────────────────────────────────┐
-│ Jenkins Pipeline │
-│ │
-│ Checkout → Install → Test → Build → Tag → │
-│ Health Check│
-│ │
-│ (a failing Test stage stops the pipeline) │
-└─────────────────────────────────────────────┘
-│
-▼
-Docker image (tagged with build number + latest)
-│
-▼
-Running container exposes /health, /version, /environment
+        |  (merge)
+        v
+     develop  ---->  Pull Request  ---->  main
+        |
+        | (build triggered in Jenkins)
+        v
++---------------------------------------------+
+|              Jenkins Pipeline               |
+|                                             |
+|  Checkout -> Install -> Test -> Build ->    |
+|                          Tag -> Health Check|
+|                                             |
+|  (a failing Test stage stops the pipeline)  |
++---------------------------------------------+
+        |
+        v
+   Docker image (tagged with build number + latest)
+        |
+        v
+   Running container exposes:
+   /health, /version, /environment
+```
 
 ### Runtime architecture
 
-HTTP requests
-         │
-         ▼
-
-┌───────────────────┐
-│ Flask app.py │
-│ │
-│ /health ────┼──► {"status": "UP"}
-│ /version ────┼──► {"version": "1.0.0"}
-│ /environment ────┼──► reads APP_ENVIRONMENT env var
-└───────────────────┘
-        │
-packaged inside
-        ▼
-Docker container
-(APP_ENVIRONMENT injected at runtime via -e flag)
+```
+        HTTP requests
+             |
+             v
+   +-------------------+
+   |   Flask app.py    |
+   |                   |
+   |  /health       -->  {"status": "UP"}
+   |  /version      -->  {"version": "1.0.0"}
+   |  /environment  -->  reads APP_ENVIRONMENT env var
+   +-------------------+
+             |
+      packaged inside
+             v
+     Docker container
+   (APP_ENVIRONMENT injected at runtime via -e flag)
+```
 
 ## AI assistance
 

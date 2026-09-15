@@ -103,3 +103,87 @@ SCM", pointing at this repository and the `develop` branch, then
 trigger a build.
 
 ## Project structure
+
+system-health-dashboard/
+├── app.py
+├── requirements.txt
+├── tests/
+│ └── test_app.py
+├── conftest.py
+├── Dockerfile
+├── .dockerignore
+├── .gitignore
+├── Jenkinsfile
+├── MERGE_CONFLICT.md
+└── README.md
+
+## Evidence
+
+### Successful Jenkins pipeline
+![Successful Jenkins pipeline](docs/screenshots/jenkins-success.jpeg)
+
+### Pipeline stops on a failed test
+![Pipeline halts on test failure](docs/screenshots/jenkins-failure.jpeg)
+
+### Automated tests failing
+![pytest 2 passed 1 failed](docs/screenshots/pytest-fail.jpeg)
+
+### Externalised environment configuration
+![/environment returns production](docs/screenshots/environment-production.jpeg)
+
+## Architecture
+
+The project follows a simple Git-to-deployment flow. Code moves through
+feature branches into `develop`, and a Jenkins pipeline validates and
+containerises every change.
+
+### Delivery workflow
+
+feature/* branches
+│ (merge)
+▼
+develop ───────► Pull Request ───────► main
+│
+│ (Jenkins polls / build triggered)
+▼
+┌─────────────────────────────────────────────┐
+│ Jenkins Pipeline │
+│ │
+│ Checkout → Install → Test → Build → Tag → │
+│ Health Check│
+│ │
+│ (a failing Test stage stops the pipeline) │
+└─────────────────────────────────────────────┘
+│
+▼
+Docker image (tagged with build number + latest)
+│
+▼
+Running container exposes /health, /version, /environment
+
+### Runtime architecture
+
+HTTP requests
+         │
+         ▼
+
+┌───────────────────┐
+│ Flask app.py │
+│ │
+│ /health ────┼──► {"status": "UP"}
+│ /version ────┼──► {"version": "1.0.0"}
+│ /environment ────┼──► reads APP_ENVIRONMENT env var
+└───────────────────┘
+        │
+packaged inside
+        ▼
+Docker container
+(APP_ENVIRONMENT injected at runtime via -e flag)
+
+## AI assistance
+
+In line with the academic-integrity requirement, AI assistance
+(Claude) was used as a guide during this project for explanation,
+troubleshooting (Java/Jenkins/Docker configuration on Windows) and
+drafting. All files were written, run, tested and understood by the
+author.
